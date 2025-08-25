@@ -1,0 +1,59 @@
+services:
+  parser-service:
+    image: ${PARSER_IMAGE_REPO}:${PARSER_IMAGE_VERSION}
+    container_name: msd-parser
+    restart: unless-stopped
+    depends_on:
+      - msd-service
+    environment:
+      TARGET_API_URL: "http://msd-service:8080"
+
+  telegram-bot-service:
+    image: ${TELEGRAM_BOT_IMAGE_REPO}:${TELEGRAM_BOT_IMAGE_VERSION}
+    container_name: msd-telegram-bot
+    restart: unless-stopped
+    depends_on:
+      - msd-service
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      MSD_API_URL: "http://msd-service:8080"
+
+  msd-service:
+    image: ${IMAGE_REPO}:${APP_VERSION}
+    container_name: msd
+    ports:
+      - "${APP_PORT}:8080"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  postgres:
+    image: postgres:latest
+    container_name: msd-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
+
